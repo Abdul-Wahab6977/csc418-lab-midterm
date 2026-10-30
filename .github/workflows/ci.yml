@@ -21,7 +21,7 @@ jobs:
       - name: Run Automated Tests
         id: run_tests
         continue-on-error: true
-        run: npm test -- --json --outputFile=jest-results.json
+        run: npx jest --json --outputFile=jest-results.json
 
       - name: Send Report to Local Receiver / Tunnel
         if: always()
