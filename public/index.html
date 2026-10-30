@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Handly - Assignment submission portal</title>
+  <meta name="description" content="Hand in your assignment link once. Tests, reports, email and deploy run by themselves.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script>
+    // set theme before paint to avoid a flash
+    try {
+      var t = localStorage.getItem('handly-theme');
+      if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+  </script>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#" data-tab="portal">
+      <span class="brand-mark">h</span>
+      <span class="brand-name">handly</span>
+    </a>
+    <nav class="tabs" aria-label="Sections">
+      <button class="tab is-active" data-tab="portal" type="button">Submission portal</button>
+      <button class="tab" data-tab="list" type="button">My submissions <span class="count" id="navCount">0</span></button>
+    </nav>
+    <div class="nav-right">
+      <div class="course"><strong>CSC418</strong><span>DevOps Lab · Fall 2026</span></div>
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="Toggle light / dark theme"><i data-icon="moon"></i></button>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <span class="pill"><span class="dot"></span> Checks run on GitHub Actions</span>
+      <h1>Hand in once.<br>Every check runs<br><em>on its own.</em></h1>
+      <p>Paste your assignment link. Handly validates it, runs the automated tests, keeps the report on this computer, emails the result and publishes only when everything is green.</p>
+      <div class="chips">
+        <span class="chip"><i data-icon="flask"></i><b>8 tests</b> on every push</span>
+        <span class="chip"><i data-icon="file"></i><b>JSON report</b> saved locally</span>
+        <span class="chip"><i data-icon="globe"></i><b>Deploys</b> only on green</span>
+      </div>
+    </div>
+
+    <div class="terminal" aria-hidden="true">
+      <div class="term-top"><span><i data-icon="branch"></i> main</span><span>.github/workflows/ci.yml</span></div>
+      <div class="flow" id="heroFlow"></div>
+      <div class="term-body" id="termBody"></div>
+    </div>
+  </div>
+</section>
+
+<main id="view-portal" class="wrap grid">
+  <!-- Submit form -->
+  <section class="card form-card">
+    <div class="card-head">
+      <span class="badge-ic"><i data-icon="upload"></i></span>
+      <div><h2>Submit an assignment</h2><p>Fill in your details to add a new submission.</p></div>
+    </div>
+
+    <form id="form" novalidate>
+      <label class="field">
+        <span class="label">Student name <b>*</b></span>
+        <span class="input"><i data-icon="user"></i><input name="studentName" type="text" autocomplete="name" placeholder="e.g. Abdul Wahab"></span>
+        <span class="err" data-err="studentName"></span>
+      </label>
+      <label class="field">
+        <span class="label">Registration number <b>*</b></span>
+        <span class="input"><i data-icon="hash"></i><input name="regNo" type="text" placeholder="e.g. CIIT/FA23-BSE-001/ATK"></span>
+        <span class="err" data-err="regNo"></span>
+      </label>
+      <label class="field">
+        <span class="label">Assignment title <b>*</b></span>
+        <span class="input"><i data-icon="book"></i><input name="title" type="text" placeholder="e.g. DevOps Lab Midterm"></span>
+        <span class="err" data-err="title"></span>
+      </label>
+      <label class="field">
+        <span class="label">Submission URL <b>*</b></span>
+        <span class="input"><i data-icon="link"></i><input name="url" type="text" inputmode="url" placeholder="https://github.com/you/your-repo"></span>
+        <span class="hint">Make sure your instructor can open this link.</span>
+        <span class="err" data-err="url"></span>
+      </label>
+
+      <button class="btn primary block" type="submit"><i data-icon="upload"></i> Upload</button>
+      <p class="form-msg" id="formMsg" role="status" aria-live="polite"></p>
+    </form>
+    <div class="card-foot"><i data-icon="shield"></i> All fields are required. No file upload needed.</div>
+  </section>
+
+  <!-- Checks -->
+  <section class="card checks-card">
+    <div class="card-head">
+      <span class="badge-ic"><i data-icon="flask"></i></span>
+      <div class="grow"><h2>Submission checks</h2><p id="repoLine">Waiting for the first test run</p></div>
+      <span class="status-pill" id="modePill"><span class="dot"></span><span id="modeText">Connecting</span></span>
+    </div>
+
+    <div class="banner" id="banner"></div>
+    <div class="steps" id="steps"></div>
+
+    <div class="run-row">
+      <span class="muted-label">Pipeline run</span>
+      <span class="run-id" id="runId">-</span>
+      <a class="btn ghost small" id="runLink" href="#" target="_blank" rel="noopener" hidden>View on GitHub <i data-icon="ext"></i></a>
+    </div>
+
+    <div class="stats">
+      <div class="stat ring-stat">
+        <svg viewBox="0 0 100 100" class="ring" aria-hidden="true">
+          <circle cx="50" cy="50" r="42" class="ring-bg"/>
+          <circle cx="50" cy="50" r="42" class="ring-fg" id="ringFg" pathLength="100"/>
+        </svg>
+        <div class="ring-txt"><b id="ringPct">-</b><span>pass rate</span></div>
+      </div>
+      <div class="stat"><span>Pipeline</span><b id="stStatus" class="word">-</b><i class="bar"></i></div>
+      <div class="stat"><span>Total tests</span><b id="stTotal">-</b><i class="bar b-brand"></i></div>
+      <div class="stat"><span>Passed</span><b id="stPassed">-</b><i class="bar b-ok"></i></div>
+      <div class="stat"><span>Failed</span><b id="stFailed">-</b><i class="bar b-bad"></i></div>
+    </div>
+
+    <p class="commit" id="commitLine"></p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Test case</th><th>Result</th><th class="th-det">Details</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+    <div class="next">
+      <h3>What would you like to do next?</h3>
+      <p>Run the current code, or push a real change to demonstrate a failure and its fix.</p>
+      <div class="next-actions">
+        <button class="btn primary" id="runBtn" type="button"><i data-icon="play"></i> Run Tests</button>
+        <div class="cmd" data-copy="npm run defect&#10;git commit -am &quot;Introduce defect&quot;&#10;git push">
+          <div class="cmd-title"><i data-icon="bug"></i> Push Defect <i class="copy" data-icon="copy"></i></div>
+          <code>npm run defect<br>git commit -am "Introduce defect"<br>git push</code>
+        </div>
+        <div class="cmd" data-copy="npm run fix&#10;git commit -am &quot;Fix defect&quot;&#10;git push">
+          <div class="cmd-title"><i data-icon="wrench"></i> Fix Defect and Push <i class="copy" data-icon="copy"></i></div>
+          <code>npm run fix<br>git commit -am "Fix defect"<br>git push</code>
+        </div>
+      </div>
+      <p class="fine" id="nextNote">Click a command card to copy it. A failed version is never deployed.</p>
+    </div>
+  </section>
+</main>
+
+<main id="view-list" class="wrap" hidden>
+  <section class="card list-card">
+    <div class="card-head">
+      <span class="badge-ic"><i data-icon="book"></i></span>
+      <div class="grow"><h2>My submissions</h2><p id="listSub">Latest first</p></div>
+      <button class="btn ghost small" type="button" data-tab="portal"><i data-icon="upload"></i> New submission</button>
+    </div>
+    <ul class="subs" id="subs"></ul>
+  </section>
+</main>
+
+<footer class="foot">
+  <span>Handly · Assignment submission portal</span>
+  <span>CSC418 DevOps Lab Midterm · Abdul Wahab</span>
+</footer>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script src="validation.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

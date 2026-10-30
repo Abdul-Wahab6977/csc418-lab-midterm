@@ -1,18 +1,60 @@
-# CSC418 Assignment Submission Portal
+# Handly - Assignment Submission Portal (CSC418 DevOps Lab Midterm)
 
-## Run the application
+Students enter name, registration number, assignment title and a submission URL.
+Every push to GitHub runs automated tests, sends a JSON report to a receiver on your
+computer, optionally emails it, and deploys the static frontend to GitHub Pages only if all tests pass.
+
+## Run the app
+```bash
 npm install
-npm start
-Open http://localhost:3000
+npm start            # http://localhost:3000
+```
 
 ## Run the tests
-npm test
+```bash
+npm run test:local   # runs the 8 tests, writes test-report.json, does not send it
+npm test             # same, and POSTs the report to REPORT_URL (default http://localhost:4000/report)
+```
+A failing test makes the command (and the CI test stage) exit with code 1.
 
-## Start the local report receiver
-node receiver.js
-Listens on port 4000 and saves the report as test-report.json.
+## Start the receiver (saves `test-report.json` on your computer)
+```bash
+npm run receiver     # listens on http://localhost:4000/report
+```
+GitHub-hosted runners cannot see your `localhost`, so expose the receiver with a tunnel
+and keep both running during the demo:
+```bash
+ngrok http 4000                                   # or
+cloudflared tunnel --url http://localhost:4000
+```
+Copy the public `https://....` URL and add `/report` at the end.
 
-## CI
-GitHub Actions runs on a self-hosted runner on every push. After the tests,
-make-report.js sends the JSON report to the local receiver
-(http://localhost:4000/receive-report), for both passing and failing runs.
+## GitHub setup
+**Settings -> Secrets and variables -> Actions -> New repository secret**
+
+| Secret | Value | Needed for |
+|---|---|---|
+| `REPORT_URL` | `https://<your-tunnel>/report` | local JSON report |
+| `SMTP_USERNAME` | your Gmail address | email (bonus) |
+| `SMTP_PASSWORD` | Gmail **App Password** (16 chars) | email (bonus) |
+| `MAIL_TO` | address that receives the report | email (bonus) |
+
+**Settings -> Pages -> Build and deployment -> Source: GitHub Actions** (bonus deploy).
+
+## Demo workflow
+```bash
+git push                                   # 1. passing run
+npm run defect && git commit -am "Introduce defect" && git push   # 2. failing run, deploy blocked
+npm run fix    && git commit -am "Fix defect"       && git push   # 3. fixed, passing run, redeployed
+```
+After each run, `test-report.json` is updated by the receiver.
+
+## Project layout
+```
+public/            frontend + shared validation (validation.js)
+src/store.js       JSON-file storage
+server.js          Express API + static hosting
+test/              automated tests (node:test)
+scripts/           run-tests.js, receiver.js, toggle-defect.js
+.github/workflows/ci.yml
+```

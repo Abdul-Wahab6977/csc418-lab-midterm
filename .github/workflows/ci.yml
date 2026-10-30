@@ -1,25 +1,95 @@
 name: CI Pipeline & Test Reporter
-on: push
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   test:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
+    env:
+      # Secrets -> flags (secrets cannot be used directly inside `if:`)
+      HAS_REPORT_URL: ${{ secrets.REPORT_URL != '' }}
+      HAS_MAIL: ${{ secrets.MAIL_TO != '' && secrets.SMTP_USERNAME != '' && secrets.SMTP_PASSWORD != '' }}
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install Dependencies
-        run: npm ci
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
-      - name: Run Automated Tests
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      # Runs the real tests, writes test-report.json and POSTs it to REPORT_URL.
+      # continue-on-error lets the later steps (email, artifact) run even when tests fail;
+      # the last step turns a failed test run into a failed pipeline.
+      - name: Run tests and send report to localhost receiver
         id: tests
         continue-on-error: true
-        run: npx jest --json --outputFile=jest-results.json
+        env:
+          REPORT_URL: ${{ secrets.REPORT_URL }}
+        run: npm test
 
-      - name: Send Report to Local Receiver
+      - name: Upload report artifact
         if: always()
-        run: node make-report.js
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: |
+            test-report.json
+            test-summary.txt
 
-      - name: Fail Job if Tests Failed
+      - name: Email the report
+        if: always() && env.HAS_MAIL == 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          to: ${{ secrets.MAIL_TO }}
+          from: Handly CI <${{ secrets.SMTP_USERNAME }}>
+          subject: "[${{ steps.tests.outcome == 'success' && 'PASSED' || 'FAILED' }}] ${{ github.repository }} @ ${{ github.sha }}"
+          body: file://test-summary.txt
+          attachments: test-report.json
+
+      - name: Fail the pipeline if tests failed
         if: steps.tests.outcome == 'failure'
-        run: exit 1
+        run: |
+          echo "Tests failed - see test-summary.txt"
+          exit 1
+
+  deploy:
+    # Runs only after `test` succeeded AND only on main. A failing run never reaches here,
+    # so the previously published site stays untouched.
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: test-report
+          path: report
+      - name: Build static site
+        run: |
+          mkdir _site
+          cp public/* _site/
+          cp report/test-report.json _site/report.json
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
