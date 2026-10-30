@@ -1,70 +1,25 @@
 name: CI Pipeline & Test Reporter
-
-on: [push]
+on: push
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-
+    runs-on: self-hosted
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
       - name: Install Dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run Automated Tests
-        id: run_tests
+        id: tests
         continue-on-error: true
-        run: npm test -- --json --outputFile=jest-results.json
+        run: npx jest --json --outputFile=jest-results.json
 
-      - name: Send Report to Local Receiver / Tunnel
+      - name: Send Report to Local Receiver
         if: always()
-        run: |
-          node -e '
-            const fs = require("fs");
-            let testResults = {};
-            try {
-              testResults = JSON.parse(fs.readFileSync("jest-results.json", "utf8"));
-            } catch(e) {
-              testResults = { success: false, numTotalTests: 0, numPassedTests: 0, numFailedTests: 0, testResults: [] };
-            }
-
-            const payload = {
-              repository: process.env.GITHUB_REPOSITORY,
-              branch: process.env.GITHUB_REF_NAME,
-              commitSHA: process.env.GITHUB_SHA,
-              runId: process.env.GITHUB_RUN_ID,
-              timestamp: new Date().toISOString(),
-              status: testResults.success ? "PASSED" : "FAILED",
-              totalTests: testResults.numTotalTests || 0,
-              passedTests: testResults.numPassedTests || 0,
-              failedTests: testResults.numFailedTests || 0,
-              testResults: testResults.testResults || []
-            };
-
-            const targetUrl = "${{ secrets.LOCAL_RECEIVER_URL }}/receive-report";
-            
-            if ("${{ secrets.LOCAL_RECEIVER_URL }}") {
-              fetch(targetUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-              }).then(async res => {
-                console.log("Report sent successfully, status:", res.status);
-              }).catch(err => {
-                console.error("Failed to send report:", err.message);
-              });
-            } else {
-              console.log("LOCAL_RECEIVER_URL secret not set.");
-            }
-          '
+        run: node make-report.js
 
       - name: Fail Job if Tests Failed
-        if: steps.run_tests.outcome == 'failure'
+        if: steps.tests.outcome == 'failure'
         run: exit 1
