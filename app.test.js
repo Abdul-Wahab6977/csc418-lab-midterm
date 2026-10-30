@@ -1,50 +1,46 @@
 const request = require('supertest');
-const { app, submissions } = require('./server');
+const app = require('./server');
 
-describe('Assignment Submission Portal Tests', () => {
-    
-    test('1. Complete details and a valid submission URL', async () => {
-        const response = await request(app)
-            .post('/submit')
-            .send({
-                name: "Abdul Wahab",
-                regNo: "FA23-BSE-031",
-                title: "DevOps Lab Midterm",
-                url: "https://github.com/Abdul-Wahab6977/csc418-lab-midterm"
-            })
-            .set('Content-Type', 'application/json');
-        
-        expect(response.status).toBe(200);
-        expect(response.body.message).toBe("Submission saved successfully");
-    });
+beforeEach(() => {
+  app.resetSubmissions();
+});
 
-    test('2. Missing registration number', async () => {
-        const response = await request(app)
-            .post('/submit')
-            .send({
-                name: "Abdul Wahab",
-                regNo: "", // Missing
-                title: "DevOps Lab Midterm",
-                url: "https://github.com/Abdul-Wahab6977/csc418-lab-midterm"
-            })
-            .set('Content-Type', 'application/json');
-        
-        expect(response.status).toBe(400);
-        expect(response.body.error).toBeDefined();
+describe('Assignment Submission Portal', () => {
+  test('Complete details and valid URL: submission is saved and listed', async () => {
+    const res = await request(app).post('/submit').send({
+      name: 'Ali Khan',
+      regNo: 'FA22-BCS-001',
+      title: 'DevOps Assignment 1',
+      url: 'https://github.com/ali/assignment1'
     });
+    expect(res.statusCode).toBe(201);
 
-    test('3. Invalid submission URL', async () => {
-        const response = await request(app)
-            .post('/submit')
-            .send({
-                name: "Abdul Wahab",
-                regNo: "FA23-BSE-031",
-                title: "DevOps Lab Midterm",
-                url: "not-a-valid-url" // Invalid URL format
-            })
-            .set('Content-Type', 'application/json');
-        
-        expect(response.status).toBe(400);
-        expect(response.body.error).toBeDefined();
+    const list = await request(app).get('/submissions');
+    expect(list.body.length).toBe(1);
+    expect(list.body[0].regNo).toBe('FA22-BCS-001');
+  });
+
+  test('Missing registration number is rejected with validation message', async () => {
+    const res = await request(app).post('/submit').send({
+      name: 'Ali Khan',
+      regNo: '',
+      title: 'DevOps Assignment 1',
+      url: 'https://github.com/ali/assignment1'
     });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.errors).toContain('Registration number is required');
+  });
+
+  test('Invalid submission URL is rejected and not saved', async () => {
+    const res = await request(app).post('/submit').send({
+      name: 'Ali Khan',
+      regNo: 'FA22-BCS-001',
+      title: 'DevOps Assignment 1',
+      url: 'not-a-valid-url'
+    });
+    expect(res.statusCode).toBe(400);
+
+    const list = await request(app).get('/submissions');
+    expect(list.body.length).toBe(0);
+  });
 });
