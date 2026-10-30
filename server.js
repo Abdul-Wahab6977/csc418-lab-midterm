@@ -32,7 +32,7 @@ app.get('/', (req, res) => {
             </form>
             <h3>Submitted List:</h3>
             <ul>
-                ${submissions.pers ? submissions.map(s => `<li>${s.name} (${s.regNo}) - ${s.title} : <a href="${s.url}" target="_blank">${s.url}</a></li>`).join('') : submissions.map(s => `<li>${s.name} (${s.regNo}) - ${s.title} : <a href="${s.url}" target="_blank">${s.url}</a></li>`).join('')}
+                ${submissions.map(s => `<li>${s.name} (${s.regNo}) - ${s.title} : <a href="${s.url}" target="_blank">${s.url}</a></li>`).join('')}
             </ul>
         </body>
         </html>
