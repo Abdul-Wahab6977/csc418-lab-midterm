@@ -1,12 +1,28 @@
 {
   "repository": "Abdul-Wahab6977/csc418-lab-midterm",
   "branch": "main",
-  "commitSha": "253c5be3ced8e87a522bc44f8585554b6173a1c6",
-  "runId": "41023525303",
-  "timestamp": "2026-10-30T08:01:49.718Z",
-  "tests": [],
-  "total": 0,
-  "passed": 0,
+  "commitSha": "36487f7a1da88c01116fd6891476725fb103197a",
+  "runId": "41025226334",
+  "timestamp": "2026-10-30T08:16:07.502Z",
+  "tests": [
+    {
+      "name": "Assignment Submission Portal Complete details and valid URL: submission is saved and listed",
+      "result": "passed",
+      "failureMessage": null
+    },
+    {
+      "name": "Assignment Submission Portal Missing registration number is rejected with validation message",
+      "result": "passed",
+      "failureMessage": null
+    },
+    {
+      "name": "Assignment Submission Portal Invalid submission URL is rejected and not saved",
+      "result": "passed",
+      "failureMessage": null
+    }
+  ],
+  "total": 3,
+  "passed": 3,
   "failed": 0,
-  "status": "failed"
+  "status": "passed"
 }
