@@ -21,7 +21,7 @@ jobs:
       - name: Run Automated Tests
         id: run_tests
         continue-on-error: true
-        run: npx jest --json --outputFile=jest-results.json
+        run: npm test -- --json --outputFile=jest-results.json
 
       - name: Send Report to Local Receiver / Tunnel
         if: always()
@@ -32,7 +32,7 @@ jobs:
             try {
               testResults = JSON.parse(fs.readFileSync("jest-results.json", "utf8"));
             } catch(e) {
-              testResults = { success: false, message: "Tests failed to execute properly" };
+              testResults = { success: false, numTotalTests: 0, numPassedTests: 0, numFailedTests: 0, testResults: [] };
             }
 
             const payload = {
@@ -55,10 +55,13 @@ jobs:
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
-              }).then(res => console.log("Report sent successfully"))
-                .catch(err => console.error("Failed to send report", err));
+              }).then(async res => {
+                console.log("Report sent successfully, status:", res.status);
+              }).catch(err => {
+                console.error("Failed to send report:", err.message);
+              });
             } else {
-              console.log("LOCAL_RECEIVER_URL secret not set, skipping remote send.");
+              console.log("LOCAL_RECEIVER_URL secret not set.");
             }
           '
 
