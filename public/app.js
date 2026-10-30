@@ -41,7 +41,8 @@
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   /* ---------- state ---------- */
-  const state = { mode: 'static', submissions: [], report: null, running: false };
+  const API = String(window.HANDLY_API || '').replace(/\/$/, '');
+  const state = { mode: 'static', git: false, submissions: [], report: null, running: false, gitRunning: false };
   const LS_KEY = 'handly-submissions';
 
   const lsGet = () => { try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch (e) { return []; } };
@@ -60,15 +61,16 @@
 
   async function loadSubmissions() {
     if (state.mode === 'api') {
-      try { state.submissions = await fetchJson('/api/submissions'); } catch (e) { state.submissions = []; }
+      try { state.submissions = await fetchJson(API + '/api/submissions'); } catch (e) { state.submissions = []; }
     } else {
       state.submissions = lsGet().sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.seq - a.seq);
     }
   }
 
   async function loadReport() {
-    try { state.report = await fetchJson(state.mode === 'api' ? '/api/report' : 'report.json'); }
-    catch (e) { state.report = null; }
+    state.report = null;
+    if (state.mode === 'api') { try { state.report = await fetchJson(API + '/api/report'); return; } catch (e) { /* fall back below */ } }
+    try { state.report = await fetchJson('report.json'); } catch (e) { state.report = null; }
   }
 
   /* ---------- render: checks ---------- */
@@ -151,11 +153,18 @@
     $('#termBody').innerHTML = '<div><span class="prompt">$</span> npm test</div>' + lines;
 
     // buttons / pills
-    $('#runBtn').disabled = state.mode !== 'api' || state.running;
+    const busy = state.running || state.gitRunning;
+    $('#runBtn').disabled = state.mode !== 'api' || busy;
     $('#runBtn').innerHTML = `<i data-icon="play"></i> ${state.running ? 'Running…' : 'Run Tests'}`;
-    $('#nextNote').textContent = state.mode === 'api'
-      ? 'Click a command card to copy it. A failed version is never deployed.'
-      : 'Demo mode: Run Tests works when the app runs locally (npm start). Click a command card to copy it.';
+    $('#defectBtn').disabled = !state.git || busy;
+    $('#fixBtn').disabled = !state.git || busy;
+    $('#defectBtn').innerHTML = `<i data-icon="bug"></i> ${state.gitRunning === 'defect' ? 'Pushing…' : 'Push Defect'}`;
+    $('#fixBtn').innerHTML = `<i data-icon="wrench"></i> ${state.gitRunning === 'fix' ? 'Pushing…' : 'Fix Defect and Push'}`;
+    $('#nextNote').textContent = state.mode !== 'api'
+      ? 'Demo mode: no backend connected. Start the app with “npm start” (or set the backend URL) to enable these buttons. Click the status pill to retry.'
+      : !state.git
+        ? 'Push Defect / Fix Defect only work when the app runs on your own computer inside the git repository.'
+        : 'Push Defect and Fix Defect edit the registration check, commit and push to main. A failed version is never deployed.';
     $('#modePill').classList.toggle('on', state.mode === 'api');
     $('#modeText').textContent = state.mode === 'api' ? 'Connected' : 'Demo mode';
 
@@ -170,7 +179,7 @@
     $('#subs').innerHTML = n
       ? state.submissions.map((s) => `<li class="sub">
           <h4>${esc(s.title)}</h4><time datetime="${esc(s.createdAt)}">${esc(fmtTime(s.createdAt))}</time>
-          <div class="meta"><b>${esc(s.studentName)}</b> · ${esc(s.regNo)}</div>
+          <div class="meta"><b>${esc(s.studentName)}</b> · ${esc(s.regNo)}</div><button class="del" type="button" data-del="${esc(s.id)}">Delete</button>
           <a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.url)}</a></li>`).join('')
       : '<li class="sub-empty">Nothing submitted yet. Your saved submissions will show up here.</li>';
   }
@@ -208,7 +217,7 @@
 
     try {
       if (state.mode === 'api') {
-        await fetchJson('/api/submissions', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(result.value) });
+        await fetchJson(API + '/api/submissions', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(result.value) });
       } else {
         const all = lsGet();
         all.push(Object.assign({ id: String(Date.now()), seq: all.length + 1 }, result.value, { createdAt: new Date().toISOString() }));
@@ -236,15 +245,53 @@
   $('#runBtn').addEventListener('click', async () => {
     if (state.mode !== 'api' || state.running) return;
     state.running = true; renderChecks();
-    try { state.report = await fetchJson('/api/run-tests', { method: 'POST' }, 60000); toast('Tests finished'); }
+    try { state.report = await fetchJson(API + '/api/run-tests', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }, 90000); toast('Tests finished'); }
     catch (e) { toast('Could not run the tests'); }
     state.running = false; renderChecks();
   });
 
-  $$('.cmd').forEach((el) => el.addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(el.dataset.copy); toast('Commands copied'); }
-    catch (e) { toast('Select and copy the commands manually'); }
-  }));
+  /* Push Defect / Fix Defect and Push */
+  function showLog(result) {
+    const box = $('#gitLog');
+    box.hidden = false;
+    box.innerHTML = (result.steps || []).map((st) =>
+      `<span class="${st.ok ? 'ok' : 'no'}">${st.ok ? '✔' : '✖'} ${esc(st.label)}</span>\n<span class="dim">${esc(st.output || '(no output)')}</span>`).join('\n\n') +
+      (result.error ? `<span class="no">✖ ${esc(result.error)}</span>` : '') +
+      (result.ok ? '\n\n<span class="ok">Pushed. Open the Actions tab on GitHub to watch the pipeline.</span>' : '');
+    box.scrollTop = box.scrollHeight;
+  }
+
+  async function gitAction(mode) {
+    if (!state.git || state.gitRunning) return;
+    const text = mode === 'defect'
+      ? 'This will BREAK the registration-number check, commit it and push to GitHub so the pipeline fails. Continue?'
+      : 'This will restore the registration-number check, commit it and push to GitHub. Continue?';
+    if (!window.confirm(text)) return;
+    state.gitRunning = mode; renderChecks();
+    $('#gitLog').hidden = false; $('#gitLog').textContent = 'Working…';
+    try {
+      const r = await fetchJson('/api/defect', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ mode }) }, 120000);
+      showLog(r); toast(mode === 'defect' ? 'Defect pushed' : 'Fix pushed');
+    } catch (e) {
+      showLog(e.body || { error: 'Could not reach the backend.' }); toast('Git action failed');
+    }
+    state.gitRunning = false;
+    await loadReport(); renderChecks();
+  }
+  $('#defectBtn').addEventListener('click', () => gitAction('defect'));
+  $('#fixBtn').addEventListener('click', () => gitAction('fix'));
+
+  /* delete a submission */
+  $('#subs').addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-del]');
+    if (!btn || !window.confirm('Delete this submission?')) return;
+    const id = btn.dataset.del;
+    try {
+      if (state.mode === 'api') await fetchJson(API + '/api/submissions/' + encodeURIComponent(id), { method: 'DELETE' });
+      else lsSet(lsGet().filter((x) => x.id !== id));
+    } catch (err) { toast('Could not delete'); return; }
+    await loadSubmissions(); renderList(); renderChecks(); toast('Submission deleted');
+  });
 
   function setTab(name) {
     $('#view-portal').hidden = name !== 'portal';
@@ -266,10 +313,17 @@
   });
 
   /* ---------- boot ---------- */
-  (async function init() {
-    paintIcons(); themeIcon();
-    try { await fetchJson('/api/health', null, 1500); state.mode = 'api'; } catch (e) { state.mode = 'static'; }
+  async function connect() {
+    try { await fetchJson(API + '/api/health', null, 2500); state.mode = 'api'; } catch (e) { state.mode = 'static'; }
+    state.git = false;
+    if (state.mode === 'api' && !API) {
+      try { state.git = !!(await fetchJson('/api/info', null, 4000)).git; } catch (e) { /* ignore */ }
+    }
     await Promise.all([loadSubmissions(), loadReport()]);
     renderList(); renderChecks();
-  })();
+  }
+  $('#modePill').addEventListener('click', async () => { $('#modeText').textContent = 'Connecting'; await connect(); toast(state.mode === 'api' ? 'Backend connected' : 'No backend found'); });
+
+  paintIcons(); themeIcon();
+  connect();
 })();

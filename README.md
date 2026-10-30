@@ -10,6 +10,27 @@ npm install
 npm start            # http://localhost:3000
 ```
 
+## What every button does (when the backend is connected)
+| Button | Action |
+|---|---|
+| Upload | validates and saves the submission through the backend |
+| Delete (My submissions) | removes a saved submission |
+| Run Tests | runs the real test suite on the backend and shows the fresh report |
+| Push Defect | breaks the registration-number check, `git commit`, `git push` (local only) |
+| Fix Defect and Push | restores the check, `git commit`, `git push` (local only) |
+| Status pill | re-checks the backend connection |
+
+The Push/Fix buttons run git on **your computer**, so use them with `npm start` inside your cloned repo.
+
+## Host the backend online (optional, makes the GitHub Pages site fully working)
+GitHub Pages cannot run Node. To connect the Pages site to a real backend:
+1. Create a free account on https://render.com -> **New -> Blueprint** -> pick this repo (it reads `render.yaml`).
+2. Copy the service URL, e.g. `https://handly.onrender.com`.
+3. GitHub repo -> **Settings -> Secrets and variables -> Actions -> Variables -> New repository variable**: `API_URL` = that URL.
+4. Push again. The Pages site now saves submissions and runs tests on that backend.
+
+Without `API_URL` the Pages site still works in demo mode (submissions stored in the browser).
+
 ## Run the tests
 ```bash
 npm run test:local   # runs the 8 tests, writes test-report.json, does not send it

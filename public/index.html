@@ -100,7 +100,7 @@
     <div class="card-head">
       <span class="badge-ic"><i data-icon="flask"></i></span>
       <div class="grow"><h2>Submission checks</h2><p id="repoLine">Waiting for the first test run</p></div>
-      <span class="status-pill" id="modePill"><span class="dot"></span><span id="modeText">Connecting</span></span>
+      <button class="status-pill" id="modePill" type="button" title="Click to re-check the backend connection"><span class="dot"></span><span id="modeText">Connecting</span></button>
     </div>
 
     <div class="banner" id="banner"></div>
@@ -140,16 +140,11 @@
       <p>Run the current code, or push a real change to demonstrate a failure and its fix.</p>
       <div class="next-actions">
         <button class="btn primary" id="runBtn" type="button"><i data-icon="play"></i> Run Tests</button>
-        <div class="cmd" data-copy="npm run defect&#10;git commit -am &quot;Introduce defect&quot;&#10;git push">
-          <div class="cmd-title"><i data-icon="bug"></i> Push Defect <i class="copy" data-icon="copy"></i></div>
-          <code>npm run defect<br>git commit -am "Introduce defect"<br>git push</code>
-        </div>
-        <div class="cmd" data-copy="npm run fix&#10;git commit -am &quot;Fix defect&quot;&#10;git push">
-          <div class="cmd-title"><i data-icon="wrench"></i> Fix Defect and Push <i class="copy" data-icon="copy"></i></div>
-          <code>npm run fix<br>git commit -am "Fix defect"<br>git push</code>
-        </div>
+        <button class="btn danger" id="defectBtn" type="button"><i data-icon="bug"></i> Push Defect</button>
+        <button class="btn good" id="fixBtn" type="button"><i data-icon="wrench"></i> Fix Defect and Push</button>
       </div>
-      <p class="fine" id="nextNote">Click a command card to copy it. A failed version is never deployed.</p>
+      <pre class="log" id="gitLog" hidden></pre>
+      <p class="fine" id="nextNote"></p>
     </div>
   </section>
 </main>
@@ -172,6 +167,7 @@
 
 <div class="toast" id="toast" role="status"></div>
 
+<script src="config.js"></script>
 <script src="validation.js"></script>
 <script src="app.js"></script>
 </body>

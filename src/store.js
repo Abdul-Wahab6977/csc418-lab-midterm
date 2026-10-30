@@ -40,7 +40,15 @@ function createStore(filePath) {
     return { ok: true, submission };
   }
 
-  return { list, add };
+  function remove(id) {
+    const all = read();
+    const next = all.filter((s) => s.id !== id);
+    if (next.length === all.length) return false;
+    write(next);
+    return true;
+  }
+
+  return { list, add, remove };
 }
 
 module.exports = { createStore };

@@ -83,10 +83,13 @@ jobs:
           name: test-report
           path: report
       - name: Build static site
+        env:
+          API_URL: ${{ vars.API_URL }}   # optional: your hosted backend, e.g. https://handly.onrender.com
         run: |
           mkdir _site
           cp public/* _site/
           cp report/test-report.json _site/report.json
+          echo "window.HANDLY_API = '${API_URL}';" > _site/config.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

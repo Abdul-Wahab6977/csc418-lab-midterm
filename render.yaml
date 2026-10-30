@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: handly
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DISABLE_GIT_ACTIONS   # git push buttons work only on your own computer
+        value: "1"
