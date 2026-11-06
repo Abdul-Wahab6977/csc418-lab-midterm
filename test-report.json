@@ -1,28 +1,65 @@
 {
-  "repository": "Abdul-Wahab6977/csc418-lab-midterm",
-  "branch": "main",
-  "commitSha": "36938dc1fa90c0196b8a0d4c330526957d29a188",
-  "runId": "41028418172",
-  "timestamp": "2026-10-30T08:44:30.860Z",
+  "repository": "local/csc418-lab-midterm",
+  "branch": "local",
+  "commitSha": "local",
+  "pipelineRunId": "local",
+  "runNumber": null,
+  "runUrl": null,
+  "timestamp": "2026-11-06T03:54:11.433Z",
+  "summary": {
+    "total": 8,
+    "passed": 8,
+    "failed": 0,
+    "status": "passed"
+  },
   "tests": [
     {
-      "name": "Assignment Submission Portal Complete details and valid URL: submission is saved and listed",
-      "result": "passed",
+      "name": "Complete details and valid URL are saved and displayed",
+      "result": "pass",
+      "durationMs": 16,
       "failureMessage": null
     },
     {
-      "name": "Assignment Submission Portal Missing registration number is rejected with validation message",
-      "result": "passed",
+      "name": "Missing registration number is rejected with a message",
+      "result": "pass",
+      "durationMs": 2,
       "failureMessage": null
     },
     {
-      "name": "Assignment Submission Portal Invalid submission URL is rejected and not saved",
-      "result": "passed",
+      "name": "Invalid submission URL is rejected and not saved",
+      "result": "pass",
+      "durationMs": 2,
+      "failureMessage": null
+    },
+    {
+      "name": "All required fields reject blank and whitespace values",
+      "result": "pass",
+      "durationMs": 3,
+      "failureMessage": null
+    },
+    {
+      "name": "Unsafe URL protocols are rejected",
+      "result": "pass",
+      "durationMs": 2,
+      "failureMessage": null
+    },
+    {
+      "name": "Multiple submissions survive a fresh read in latest-first order",
+      "result": "pass",
+      "durationMs": 61,
+      "failureMessage": null
+    },
+    {
+      "name": "Invalid attempt does not change an existing saved record",
+      "result": "pass",
+      "durationMs": 9,
+      "failureMessage": null
+    },
+    {
+      "name": "Valid input is trimmed before saving",
+      "result": "pass",
+      "durationMs": 7,
       "failureMessage": null
     }
-  ],
-  "total": 3,
-  "passed": 3,
-  "failed": 0,
-  "status": "passed"
+  ]
 }

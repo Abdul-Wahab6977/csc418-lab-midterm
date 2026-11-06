@@ -67,10 +67,35 @@
     }
   }
 
+  /* Accepts our report format and older/other shapes; returns null when it is not a test report. */
+  function normalizeReport(r) {
+    if (!r || typeof r !== 'object') return null;
+    const raw = Array.isArray(r.tests) ? r.tests : Array.isArray(r.results) ? r.results : null;
+    if (!raw) return null;
+    const tests = raw.map((t) => ({
+      name: String((t && (t.name || t.title || t.fullName)) || 'Test'),
+      result: /^(pass|passed|ok|success)$/i.test(String((t && (t.result || t.status)) || '')) ? 'pass' : 'fail',
+      failureMessage: (t && (t.failureMessage || t.message || t.error)) ? String(t.failureMessage || t.message || t.error) : null,
+    }));
+    const passed = tests.filter((t) => t.result === 'pass').length;
+    const failed = tests.length - passed;
+    return {
+      repository: r.repository || r.repo || 'unknown repository',
+      branch: r.branch || '-',
+      commitSha: String(r.commitSha || r.commit || r.sha || '-'),
+      pipelineRunId: r.pipelineRunId || r.runId || r.run_id || '-',
+      runNumber: r.runNumber || null,
+      runUrl: r.runUrl || null,
+      timestamp: r.timestamp || r.executionTimestamp || new Date().toISOString(),
+      summary: { total: tests.length, passed, failed, status: tests.length && !failed ? 'passed' : 'failed' },
+      tests,
+    };
+  }
+
   async function loadReport() {
     state.report = null;
-    if (state.mode === 'api') { try { state.report = await fetchJson(API + '/api/report'); return; } catch (e) { /* fall back below */ } }
-    try { state.report = await fetchJson('report.json'); } catch (e) { state.report = null; }
+    if (state.mode === 'api') { try { state.report = normalizeReport(await fetchJson(API + '/api/report')); if (state.report) return; } catch (e) { /* fall back below */ } }
+    try { state.report = normalizeReport(await fetchJson('report.json')); } catch (e) { state.report = null; }
   }
 
   /* ---------- render: checks ---------- */
@@ -94,6 +119,16 @@
   }
 
   function renderChecks() {
+    try { renderChecksUnsafe(); } catch (err) {
+      console.error(err);
+      $('#banner').className = 'banner bad';
+      $('#banner').innerHTML = 'Could not display the report. Press “Run Tests” to create a fresh one.';
+      state.report = null;
+    }
+    paintIcons();
+  }
+
+  function renderChecksUnsafe() {
     const r = state.report;
     const s = r && r.summary;
     const passed = s && s.status === 'passed';
@@ -245,7 +280,7 @@
   $('#runBtn').addEventListener('click', async () => {
     if (state.mode !== 'api' || state.running) return;
     state.running = true; renderChecks();
-    try { state.report = await fetchJson(API + '/api/run-tests', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }, 90000); toast('Tests finished'); }
+    try { state.report = normalizeReport(await fetchJson(API + '/api/run-tests', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }, 90000)); toast('Tests finished'); }
     catch (e) { toast('Could not run the tests'); }
     state.running = false; renderChecks();
   });
