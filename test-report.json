@@ -5,7 +5,7 @@
   "pipelineRunId": "local",
   "runNumber": null,
   "runUrl": null,
-  "timestamp": "2026-11-06T03:54:11.433Z",
+  "timestamp": "2026-11-06T03:56:28.524Z",
   "summary": {
     "total": 8,
     "passed": 8,
@@ -16,7 +16,7 @@
     {
       "name": "Complete details and valid URL are saved and displayed",
       "result": "pass",
-      "durationMs": 16,
+      "durationMs": 14,
       "failureMessage": null
     },
     {
@@ -46,19 +46,19 @@
     {
       "name": "Multiple submissions survive a fresh read in latest-first order",
       "result": "pass",
-      "durationMs": 61,
+      "durationMs": 45,
       "failureMessage": null
     },
     {
       "name": "Invalid attempt does not change an existing saved record",
       "result": "pass",
-      "durationMs": 9,
+      "durationMs": 6,
       "failureMessage": null
     },
     {
       "name": "Valid input is trimmed before saving",
       "result": "pass",
-      "durationMs": 7,
+      "durationMs": 4,
       "failureMessage": null
     }
   ]
