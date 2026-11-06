@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Handly - Assignment submission portal</title>
-  <meta name="description" content="Hand in your assignment link once. Tests, reports, email and deploy run by themselves.">
+  <meta name="description" content="Submit your assignment link once. Validation, tests, report, email and deploy run by themselves.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script>
     // set theme before paint to avoid a flash
@@ -20,10 +20,12 @@
 </head>
 <body>
 
+<div class="hero-bg" aria-hidden="true"><span class="glow g1"></span><span class="glow g2"></span></div>
+
 <header class="nav">
   <div class="nav-inner">
     <a class="brand" href="#" data-tab="portal">
-      <span class="brand-mark">h</span>
+      <span class="brand-mark"><i data-icon="check"></i></span>
       <span class="brand-name">handly</span>
     </a>
     <nav class="tabs" aria-label="Sections">
@@ -40,18 +42,23 @@
 <section class="hero">
   <div class="hero-inner">
     <div class="hero-copy">
-      <span class="pill"><span class="dot"></span> Checks run on GitHub Actions</span>
-      <h1>Hand in once.<br>Every check runs<br><em>on its own.</em></h1>
-      <p>Paste your assignment link. Handly validates it, runs the automated tests, keeps the report on this computer, emails the result and publishes only when everything is green.</p>
+      <span class="pill"><span class="dot"></span> Every push runs on GitHub Actions</span>
+      <h1>Submit it once.<br>The pipeline<br>does the rest.</h1>
+      <p>Paste your assignment link. Handly checks it, runs the automated tests, keeps the JSON report on this computer, emails the result and only publishes when every test is green.</p>
       <div class="chips">
         <span class="chip"><i data-icon="flask"></i><b>8 tests</b> on every push</span>
         <span class="chip"><i data-icon="file"></i><b>JSON report</b> saved locally</span>
+        <span class="chip"><i data-icon="mail"></i><b>Email</b> with the result</span>
         <span class="chip"><i data-icon="globe"></i><b>Deploys</b> only on green</span>
       </div>
     </div>
 
     <div class="terminal" aria-hidden="true">
-      <div class="term-top"><span><i data-icon="branch"></i> main</span><span>.github/workflows/ci.yml</span></div>
+      <div class="term-top">
+        <span class="lights"><i></i><i></i><i></i></span>
+        <span><i data-icon="branch"></i> main</span>
+        <span class="term-file">.github/workflows/ci.yml</span>
+      </div>
       <div class="flow" id="heroFlow"></div>
       <div class="term-body" id="termBody"></div>
     </div>
