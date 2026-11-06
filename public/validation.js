@@ -7,7 +7,7 @@
   else root.HandlyValidation = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   // DEFECT-SWITCH: `npm run defect` flips this to false, `npm run fix` flips it back.
-  const REQUIRE_REG_NO = false;
+  const REQUIRE_REG_NO = true;
 
   const FIELDS = ['studentName', 'regNo', 'title', 'url'];
 
