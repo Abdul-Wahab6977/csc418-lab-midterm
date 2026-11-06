@@ -5,7 +5,7 @@
   "pipelineRunId": "local",
   "runNumber": null,
   "runUrl": null,
-  "timestamp": "2026-11-06T03:56:28.524Z",
+  "timestamp": "2026-11-06T04:56:11.850Z",
   "summary": {
     "total": 8,
     "passed": 8,
@@ -16,37 +16,37 @@
     {
       "name": "Complete details and valid URL are saved and displayed",
       "result": "pass",
-      "durationMs": 14,
+      "durationMs": 11,
       "failureMessage": null
     },
     {
       "name": "Missing registration number is rejected with a message",
       "result": "pass",
-      "durationMs": 2,
+      "durationMs": 1,
       "failureMessage": null
     },
     {
       "name": "Invalid submission URL is rejected and not saved",
       "result": "pass",
-      "durationMs": 2,
+      "durationMs": 1,
       "failureMessage": null
     },
     {
       "name": "All required fields reject blank and whitespace values",
       "result": "pass",
-      "durationMs": 3,
+      "durationMs": 2,
       "failureMessage": null
     },
     {
       "name": "Unsafe URL protocols are rejected",
       "result": "pass",
-      "durationMs": 2,
+      "durationMs": 1,
       "failureMessage": null
     },
     {
       "name": "Multiple submissions survive a fresh read in latest-first order",
       "result": "pass",
-      "durationMs": 45,
+      "durationMs": 36,
       "failureMessage": null
     },
     {
@@ -58,7 +58,7 @@
     {
       "name": "Valid input is trimmed before saving",
       "result": "pass",
-      "durationMs": 4,
+      "durationMs": 5,
       "failureMessage": null
     }
   ]
